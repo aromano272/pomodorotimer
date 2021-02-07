@@ -8,11 +8,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlin.properties.Delegates
 
-class PomodoroTimer(
-    private val workTime: Seconds,
-    private val restTime: Seconds
-) {
+object PomodoroTimer {
+
+    private var workTime: Seconds by Delegates.notNull()
+    private var restTime: Seconds by Delegates.notNull()
 
     private lateinit var tickerChannel: ReceiveChannel<Unit>
     private var currentTickCount: Int = 0
@@ -29,6 +30,9 @@ class PomodoroTimer(
             PomodoroTimerStatus.RESTING -> workTime - moduloTickCount + restTime
         }
 
+    private val currentState: PomodoroTimerState
+        get() = PomodoroTimerState(currentStatus, timeRemainingInState, isPaused)
+
     private var isPaused = false
 
     private fun startTicker() {
@@ -36,10 +40,11 @@ class PomodoroTimer(
         tickerChannel = ticker(1000L)
 
         GlobalScope.launch {
+            mutableFlow.value = currentState
+
             for (tick in tickerChannel) {
                 currentTickCount++
 
-                val currentState = PomodoroTimerState(currentStatus, timeRemainingInState, isPaused)
                 mutableFlow.value = currentState
             }
         }
@@ -52,13 +57,14 @@ class PomodoroTimer(
         if (::tickerChannel.isInitialized) tickerChannel.cancel()
     }
 
-    fun start() {
+    fun start(workTime: Seconds, restTime: Seconds) {
+        this.workTime = workTime
+        this.restTime = restTime
         startTicker()
     }
 
     fun resume() {
         isPaused = false
-        val currentState = PomodoroTimerState(currentStatus, timeRemainingInState, isPaused)
         mutableFlow.value = currentState
         startTicker()
     }
@@ -66,7 +72,6 @@ class PomodoroTimer(
     fun pause() {
         stopTicker()
         isPaused = true
-        val currentState = PomodoroTimerState(currentStatus, timeRemainingInState, isPaused)
         mutableFlow.value = currentState
     }
 

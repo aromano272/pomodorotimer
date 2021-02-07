@@ -3,11 +3,9 @@ package com.andreromano.pomodorotimer.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -17,12 +15,9 @@ import com.andreromano.pomodorotimer.MainActivity
 import com.andreromano.pomodorotimer.R
 import com.andreromano.pomodorotimer.Seconds
 import com.andreromano.pomodorotimer.timer.PomodoroTimer
+import com.andreromano.pomodorotimer.timer.PomodoroTimerState
 import com.andreromano.pomodorotimer.timer.PomodoroTimerStatus
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
@@ -33,6 +28,8 @@ class TimerService : LifecycleService() {
         val EXTRA_REST_TIME_SECONDS = "EXTRA_REST_TIME_SECONDS"
 
         val NOTIFICATION_ACTION_STOP = "NOTIFICATION_ACTION_STOP"
+        val NOTIFICATION_ACTION_PAUSE = "NOTIFICATION_ACTION_PAUSE"
+        val NOTIFICATION_ACTION_RESUME = "NOTIFICATION_ACTION_RESUME"
 
         private val NOTIFICATION_ID = 1
         private val NOTIFICATION_CHANNEL_ID = "Pomodoro Timer"
@@ -40,7 +37,7 @@ class TimerService : LifecycleService() {
         private val NOTIFICATION_CHANNEL_IMPORTANCE = NotificationManagerCompat.IMPORTANCE_HIGH
     }
 
-    private lateinit var pomodoroTimer: PomodoroTimer
+    private var isForegroundServiceStarted = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val workTime: Seconds? = intent?.getIntExtra(EXTRA_WORK_TIME_SECONDS, 0)
@@ -52,48 +49,89 @@ class TimerService : LifecycleService() {
             restTime == 0
         ) return super.onStartCommand(intent, flags, startId)
 
-        startForegroundService()
-
-        pomodoroTimer = PomodoroTimer(workTime, restTime)
+        PomodoroTimer.stop()
 
         lifecycleScope.launchWhenStarted {
-            pomodoroTimer.asFlow()
+            PomodoroTimer.asFlow()
                 .collect {
-                    val notification = when (it.status) {
-                        PomodoroTimerStatus.WORKING -> buildWorkNotification(it.timeRemainingInState)
-                        PomodoroTimerStatus.RESTING -> buildRestNotification(it.timeRemainingInState)
-                    }
+                    val notification = buildNotification(it)
 
-                    showNotification(notification)
+                    if (isForegroundServiceStarted) showNotification(notification).also { isForegroundServiceStarted = true }
+                    else startForegroundService(notification)
                 }
         }
+
+        PomodoroTimer.start(workTime, restTime)
 
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun startForegroundService() {
+    private fun startForegroundService(notification: Notification) {
         createNotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME, NOTIFICATION_CHANNEL_IMPORTANCE)
-        startForeground(NOTIFICATION_ID, createNotificationBuilder().build())
+        startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun buildWorkNotification(time: Seconds): Notification {
-        val actionIntent = Intent(applicationContext, PomodoroTimerActionReceiver::class.java).apply {
+    private fun buildNotification(state: PomodoroTimerState): Notification {
+        val pauseActionIntent = Intent(applicationContext, PomodoroTimerActionReceiver::class.java).apply {
+            action = if (state.isPaused) NOTIFICATION_ACTION_RESUME else NOTIFICATION_ACTION_PAUSE
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pausePendingIntent: PendingIntent = PendingIntent.getBroadcast(applicationContext, 0, pauseActionIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val stopActionIntent = Intent(applicationContext, PomodoroTimerActionReceiver::class.java).apply {
             action = NOTIFICATION_ACTION_STOP
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-        val pendingIntent: PendingIntent = PendingIntent.getBroadcast(applicationContext, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val stopPendingIntent: PendingIntent = PendingIntent.getBroadcast(applicationContext, 0, stopActionIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val timeFormatter = DateTimeFormat.forPattern("mm:ss")
+        val timeDateTime = DateTime().withMillis(state.timeRemainingInState * 1000L)
+        val timeStr = timeFormatter.print(timeDateTime)
+
+        val titleStr = when (state.status) {
+            PomodoroTimerStatus.WORKING -> "WORK NOW!!!"
+            PomodoroTimerStatus.RESTING -> "TIME TO REST zzz"
+        }
+        val contentTextStr =
+            if (state.isPaused) "$timeStr - Paused"
+            else timeStr
+        val pauseButtonStr = if (state.isPaused) "RESUME" else "PAUSE"
+
+        return createNotificationBuilderWithDefaults(stopPendingIntent)
+            .setContentTitle(titleStr)
+            .setContentText(contentTextStr)
+            .addAction(0, pauseButtonStr, pausePendingIntent)
+            .addAction(0, "STOP", stopPendingIntent)
+            .build()
+    }
+
+    private fun buildWorkNotification(time: Seconds, isPaused: Boolean): Notification {
+        val pauseActionIntent = Intent(applicationContext, PomodoroTimerActionReceiver::class.java).apply {
+            action = if (isPaused) NOTIFICATION_ACTION_RESUME else NOTIFICATION_ACTION_PAUSE
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pausePendingIntent: PendingIntent = PendingIntent.getBroadcast(applicationContext, 0, pauseActionIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val stopActionIntent = Intent(applicationContext, PomodoroTimerActionReceiver::class.java).apply {
+            action = NOTIFICATION_ACTION_STOP
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val stopPendingIntent: PendingIntent = PendingIntent.getBroadcast(applicationContext, 0, stopActionIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val timeFormatter = DateTimeFormat.forPattern("mm:ss")
         val timeStr = DateTime().withMillis(time * 1000L)
 
-        return createNotificationBuilderWithDefaults(pendingIntent)
+        val pauseStr = if (isPaused) "RESUME" else "PAUSE"
+
+        return createNotificationBuilderWithDefaults(stopPendingIntent)
             .setContentTitle("WORK NOW!!!")
             .setContentText(timeFormatter.print(timeStr))
-            .addAction(0, "STOP", pendingIntent)
+            .addAction(0, pauseStr, pausePendingIntent)
+            .addAction(0, "STOP", stopPendingIntent)
             .build()
     }
 
-    private fun buildRestNotification(time: Seconds): Notification {
+    private fun buildRestNotification(time: Seconds, isPaused: Boolean): Notification {
         val actionIntent = Intent(applicationContext, PomodoroTimerActionReceiver::class.java).apply {
             action = NOTIFICATION_ACTION_STOP
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -163,13 +201,13 @@ class TimerService : LifecycleService() {
 
 
     override fun onDestroy() {
-        if (::pomodoroTimer.isInitialized) pomodoroTimer.stop()
+        PomodoroTimer.stop()
         super.onDestroy()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        if (::pomodoroTimer.isInitialized) pomodoroTimer.stop()
+        PomodoroTimer.stop()
         stopForeground(true)
         stopSelf()
     }
