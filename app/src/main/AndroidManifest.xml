@@ -15,7 +15,13 @@
         android:theme="@style/Theme.PomodoroTimer"
         >
 
-        <service android:name=".service.TimerService" />
+        <service
+            android:name=".service.TimerService"
+            android:exported="false"
+            android:stopWithTask="true"
+            />
+
+        <receiver android:name=".service.PomodoroTimerActionReceiver" />
 
         <activity android:name=".MainActivity">
             <intent-filter>
