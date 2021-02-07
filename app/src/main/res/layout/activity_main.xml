@@ -1,22 +1,270 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Heavily inspired by YOUSSOUF ABACHOUCH's design in:
+    https://dribbble.com/shots/5497981-Mobile-Pomodoro-App?utm_source=Pinterest_Shot&utm_campaign=youssoufAbachouch&utm_content=Mobile%20Pomodoro%20App&utm_medium=Social_Share
+    -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/red_400"
     tools:context=".MainActivity"
     >
 
-    <Button
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/abl_toolbar"
+        style="Widget.Design.AppBarLayout"
+        android:background="@color/transparent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="0dp"
+        app:elevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        >
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            app:contentInsetStart="0dp"
+            app:layout_collapseMode="pin"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:subtitleTextAppearance="@style/ToolbarTitleDark"
+            >
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                >
+
+                <ImageButton
+                    android:id="@+id/btn_nav_back"
+                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:tint="@color/white"
+                    android:visibility="invisible"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    />
+
+                <TextView
+                    android:id="@+id/tv_title"
+                    style="@style/ToolbarTitleDark"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/grey_900"
+                    android:text="New Task"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.appcompat.widget.Toolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guide_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="32dp"
+        />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guide_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="32dp"
+        />
+
+    <EditText
+        android:id="@+id/et_task_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="64dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toBottomOf="@id/abl_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:hint="Task Name"
+        android:textColor="@color/dark_bg_light_primary_text"
+        android:textColorHint="@color/dark_bg_light_hint_text"
+        app:backgroundTint="@color/dark_bg_light_primary_text"
+        android:textSize="32sp"
+        />
+    
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/_cv_timer_params"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="64dp"
+        app:layout_constraintStart_toStartOf="@id/guide_start"
+        app:layout_constraintEnd_toEndOf="@id/guide_end"
+        app:layout_constraintTop_toBottomOf="@id/et_task_name"
+        >
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guide_middle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5"
+            />
+
+        <TextView
+            android:id="@+id/_tv_work_time_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="16dp"
+            android:textColor="@color/dark_bg_light_primary_text"
+            android:textStyle="bold"
+            android:textSize="26sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/_tv_rest_time_label"
+            android:text="Work\nduration"
+            />
+
+        <TextView
+            android:id="@+id/_tv_rest_time_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"
+            android:textColor="@color/dark_bg_light_primary_text"
+            android:textStyle="bold"
+            android:textSize="26sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/_tv_work_time_label"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="Rest\nduration"
+            />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@color/grey_900"
+            app:layout_constraintStart_toStartOf="@id/guide_middle"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:padding="8dp"
+            >
+
+            <ImageButton
+                android:id="@+id/btn_work_time_decrement"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:srcCompat="@drawable/ic_baseline_keyboard_arrow_down_24"
+                app:tint="@color/dark_bg_light_secondary_text"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/tv_work_time"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/btn_rest_time_decrement"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                />
+
+            <TextView
+                android:id="@+id/tv_work_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark_bg_light_secondary_text"
+                android:textSize="24sp"
+                android:text="25"
+                app:layout_constraintStart_toEndOf="@id/btn_work_time_decrement"
+                app:layout_constraintEnd_toStartOf="@id/btn_work_time_increment"
+                app:layout_constraintTop_toTopOf="@id/btn_work_time_decrement"
+                app:layout_constraintBottom_toBottomOf="@id/btn_work_time_decrement"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                />
+
+            <ImageButton
+                android:id="@+id/btn_work_time_increment"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:srcCompat="@drawable/ic_baseline_keyboard_arrow_up_24"
+                app:tint="@color/dark_bg_light_secondary_text"
+                app:layout_constraintStart_toEndOf="@id/tv_work_time"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/btn_work_time_decrement"
+                app:layout_constraintBottom_toBottomOf="@id/btn_work_time_decrement"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                />
+
+            <ImageButton
+                android:id="@+id/btn_rest_time_decrement"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:srcCompat="@drawable/ic_baseline_keyboard_arrow_down_24"
+                app:tint="@color/dark_bg_light_secondary_text"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/tv_rest_time"
+                app:layout_constraintTop_toBottomOf="@id/btn_work_time_decrement"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                />
+
+            <TextView
+                android:id="@+id/tv_rest_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark_bg_light_secondary_text"
+                android:textSize="24sp"
+                android:text="5"
+                app:layout_constraintStart_toEndOf="@id/btn_rest_time_decrement"
+                app:layout_constraintEnd_toStartOf="@id/btn_rest_time_increment"
+                app:layout_constraintTop_toTopOf="@id/btn_rest_time_decrement"
+                app:layout_constraintBottom_toBottomOf="@id/btn_rest_time_decrement"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                />
+
+            <ImageButton
+                android:id="@+id/btn_rest_time_increment"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                app:srcCompat="@drawable/ic_baseline_keyboard_arrow_up_24"
+                app:tint="@color/dark_bg_light_secondary_text"
+                app:layout_constraintStart_toEndOf="@id/tv_rest_time"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/btn_rest_time_decrement"
+                app:layout_constraintBottom_toBottomOf="@id/btn_rest_time_decrement"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start service"
+        android:layout_margin="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_baseline_play_arrow_24"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
